@@ -9,6 +9,7 @@ from typing import Dict, List
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 app = FastAPI(title="3 Strands Cattle Co. Smart Ranch")
 
@@ -21,6 +22,7 @@ app.add_middleware(
 
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "frontend"
+INDEX_FILE = STATIC_DIR / "index.html"
 MEDIA_DIR = STATIC_DIR / "media"
 MEDIA_CAM_DIR = MEDIA_DIR / "cameras"
 
@@ -229,6 +231,13 @@ def config():
     if not token:
         token = DEFAULT_MAPBOX_TOKEN
     return {"mapboxToken": token}
+
+
+@app.get("/", include_in_schema=False)
+def index():
+    if not INDEX_FILE.exists():
+        raise HTTPException(status_code=500, detail="Dashboard assets missing")
+    return FileResponse(INDEX_FILE)
 
 
 if __name__ == "__main__":
