@@ -34,6 +34,10 @@ app.mount("/media", StaticFiles(directory=MEDIA_DIR), name="media")
 USERS = {"jay", "kevin", "april", "ashley"}
 PASSWORD = "3strands"
 
+DEFAULT_MAPBOX_TOKEN = (
+    "pk.eyJ1Ijoiam1jY3VsbG91Z2g0IiwiYSI6ImNtMGJvOXh3cDBjNncya3B4cDg0MXFuYnUifQ.uDJKnqE9WgkvGXYGLge-NQ"
+)
+
 RANCH_CENTER = {"lat": 36.7783, "lon": -119.4179}
 
 CATTLE_COUNT = 50
@@ -222,6 +226,8 @@ def config():
     token = (Path("/run/secrets/mapbox_token").read_text().strip() if Path("/run/secrets/mapbox_token").exists() else None)
     if token is None:
         token = os.getenv("MAPBOX_TOKEN")
+    if not token:
+        token = DEFAULT_MAPBOX_TOKEN
     return {"mapboxToken": token}
 
 

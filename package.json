@@ -1,0 +1,10 @@
+{
+  "name": "ranchos-demo",
+  "version": "1.0.0",
+  "description": "3 Strands Cattle Co. smart ranch demo orchestrated with npm inside Docker.",
+  "scripts": {
+    "start": "python -m uvicorn backend.app:app --host 0.0.0.0 --port 8082",
+    "dev": "python -m uvicorn backend.app:app --host 0.0.0.0 --port 8082 --reload"
+  },
+  "license": "UNLICENSED"
+}
