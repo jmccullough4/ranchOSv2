@@ -1,0 +1,8 @@
+services:
+  ranchos:
+    build: .
+    environment:
+      MAPBOX_TOKEN: ${MAPBOX_TOKEN:-pk.eyJ1Ijoiam1jY3VsbG91Z2g0IiwiYSI6ImNtMGJvOXh3cDBjNncya3B4cDg0MXFuYnUifQ.uDJKnqE9WgkvGXYGLge-NQ}
+    ports:
+      - "8082:8082"
+    restart: unless-stopped
