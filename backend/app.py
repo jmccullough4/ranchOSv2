@@ -20,8 +20,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-STATIC_DIR = Path(__file__).resolve().parent.parent / "frontend"
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+STATIC_DIR = FRONTEND_DIR / "dist"
 INDEX_FILE = STATIC_DIR / "index.html"
 MEDIA_DIR = STATIC_DIR / "media"
 MEDIA_CAM_DIR = MEDIA_DIR / "cameras"
@@ -90,21 +90,35 @@ GATES = [
     {
         "id": "North Gate",
         "status": "closed",
-        "lat": RANCH_CENTER["lat"] + 0.015,
-        "lon": RANCH_CENTER["lon"] - 0.008,
+        "lat": RANCH_CENTER["lat"] + 0.02,
+        "lon": RANCH_CENTER["lon"],
     },
     {
         "id": "South Gate",
         "status": "open",
         "lat": RANCH_CENTER["lat"] - 0.02,
-        "lon": RANCH_CENTER["lon"] + 0.01,
+        "lon": RANCH_CENTER["lon"] + 0.002,
+    },
+    {
+        "id": "East Gate",
+        "status": "closed",
+        "lat": RANCH_CENTER["lat"] + 0.002,
+        "lon": RANCH_CENTER["lon"] + 0.028,
     },
     {
         "id": "West Gate",
         "status": "closed",
-        "lat": RANCH_CENTER["lat"] + 0.005,
-        "lon": RANCH_CENTER["lon"] - 0.025,
+        "lat": RANCH_CENTER["lat"] - 0.004,
+        "lon": RANCH_CENTER["lon"] - 0.03,
     },
+]
+
+FENCE_POLYGON = [
+    [RANCH_CENTER["lon"] - 0.04, RANCH_CENTER["lat"] - 0.03],
+    [RANCH_CENTER["lon"] + 0.045, RANCH_CENTER["lat"] - 0.025],
+    [RANCH_CENTER["lon"] + 0.05, RANCH_CENTER["lat"] + 0.028],
+    [RANCH_CENTER["lon"] - 0.035, RANCH_CENTER["lat"] + 0.035],
+    [RANCH_CENTER["lon"] - 0.04, RANCH_CENTER["lat"] - 0.03],
 ]
 
 
@@ -140,25 +154,37 @@ def sensors():
         "WATER": {
             "status": "green" if water_level > 70 else "yellow",
             "value": f"{water_level}%",
+            "detail": f"Average trough level across 12 sensors is {water_level}% full."
+            if water_level > 70
+            else f"Refill recommended: trough levels down to {water_level}% across 12 monitoring points.",
         },
         "FENCE": {
             "status": "green" if fence_voltage >= 7.5 else "red",
             "value": f"{fence_voltage} kV",
+            "detail": f"Perimeter electric fence holding steady at {fence_voltage} kV."
+            if fence_voltage >= 7.5
+            else f"Voltage dip detected: {fence_voltage} kV average across fence segments.",
         },
         "GATE": {
             "status": "green" if not gate_open else "yellow",
-            "value": "open" if gate_open else "closed",
+            "value": "open" if gate_open else "secured",
+            "detail": "All four perimeter gates are secured."
+            if not gate_open
+            else "One or more perimeter gates currently open for ranch operations.",
         },
         "NETWORK": {
             "status": "green" if network >= 4 else "yellow",
             "value": network,
+            "detail": f"Uplink strength is {network}/5 bars with redundant LTE failover armed.",
         },
     }
+    overall_green = all(item["status"] == "green" for key, item in sensors_status.items())
     sensors_status["SYSTEM"] = {
-        "status": "green"
-        if all(item["status"] == "green" for key, item in sensors_status.items() if key != "SYSTEM")
-        else "yellow",
-        "value": "nominal" if all(item["status"] == "green" for key, item in sensors_status.items() if key != "SYSTEM") else "attention",
+        "status": "green" if overall_green else "yellow",
+        "value": "nominal" if overall_green else "review",
+        "detail": "Automation, analytics, and failovers are nominal across the ranch stack."
+        if overall_green
+        else "System automation engaged with advisories pending from sub-systems.",
     }
     return {"sensors": sensors_status}
 
@@ -230,7 +256,11 @@ def config():
         token = os.getenv("MAPBOX_TOKEN")
     if not token:
         token = DEFAULT_MAPBOX_TOKEN
-    return {"mapboxToken": token}
+    return {
+        "mapboxToken": token,
+        "ranchCenter": RANCH_CENTER,
+        "fence": {"coordinates": FENCE_POLYGON},
+    }
 
 
 @app.get("/", include_in_schema=False)

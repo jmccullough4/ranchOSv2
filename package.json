@@ -1,10 +1,24 @@
 {
   "name": "ranchos-demo",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "3 Strands Cattle Co. smart ranch demo orchestrated with npm inside Docker.",
   "scripts": {
     "start": "python -m uvicorn backend.app:app --host 0.0.0.0 --port 8082",
-    "dev": "python -m uvicorn backend.app:app --host 0.0.0.0 --port 8082 --reload"
+    "dev": "concurrently \"npm:dev:api\" \"npm:dev:client\"",
+    "dev:api": "uvicorn backend.app:app --host 0.0.0.0 --port 8082 --reload",
+    "dev:client": "cd frontend && vite",
+    "build": "cd frontend && vite build",
+    "preview": "cd frontend && vite preview --host 0.0.0.0 --port 4173"
+  },
+  "dependencies": {
+    "mapbox-gl": "^2.15.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.0",
+    "concurrently": "^8.2.2",
+    "vite": "^5.0.0"
   },
   "license": "UNLICENSED"
 }

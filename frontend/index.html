@@ -1,72 +1,14 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>3 Strands Cattle Co. Smart Ranch</title>
-    <link rel="stylesheet" href="/static/styles.css" />
-    <link
-      href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css"
-      rel="stylesheet"
-    />
-    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <meta name="description" content="Smart ranch operations dashboard for 3 Strands Cattle Co., LLC." />
+    <link rel="icon" type="image/png" href="/static/logo.png" />
   </head>
   <body>
-    <div class="app-shell">
-      <header class="app-header">
-        <div class="brand">
-          <img src="/static/logo.png" alt="3 Strands Cattle Co." class="brand-logo" />
-          <div>
-            <h1>3 Strands Cattle Co., LLC</h1>
-            <p>Smart Ranch Operations Center</p>
-          </div>
-        </div>
-        <div class="sensor-board" id="sensor-board"></div>
-      </header>
-      <main class="app-main">
-        <section class="map-panel">
-          <div id="map"></div>
-          <div class="map-overlay">
-            <h2>Herd Summary</h2>
-            <p><span id="herd-count">0</span> cattle monitored</p>
-            <p><span id="herd-strays">0</span> strays detected</p>
-            <div class="gate-status" id="gate-status"></div>
-          </div>
-        </section>
-        <aside class="details-panel">
-          <section class="details-card" id="cow-details">
-            <h2>Selected Cow</h2>
-            <div class="details-content empty">Select a cow on the globe to view details.</div>
-          </section>
-          <section class="details-card">
-            <h2>Chute Sync</h2>
-            <div class="chute" id="chute"></div>
-          </section>
-          <section class="details-card">
-            <h2>Security &amp; Predator Watch</h2>
-            <div class="cameras" id="cameras"></div>
-          </section>
-        </aside>
-      </main>
-    </div>
-
-    <div class="login-overlay" id="login-overlay">
-      <form class="login-card" id="login-form">
-        <img src="/static/logo.png" alt="3 Strands Cattle Co." />
-        <h2>Smart Ranch Login</h2>
-        <label>
-          Username
-          <input type="text" name="username" required />
-        </label>
-        <label>
-          Password
-          <input type="password" name="password" required />
-        </label>
-        <button type="submit">Enter RanchOS</button>
-        <p class="login-error" id="login-error"></p>
-      </form>
-    </div>
-
-    <script src="/static/app.js" type="module"></script>
+    <div id="root"></div>
+    <script type="module" src="/static/src/main.jsx"></script>
   </body>
 </html>

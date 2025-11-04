@@ -15,10 +15,12 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN npm install
 
 COPY backend backend
 COPY frontend frontend
+
+RUN npm run build
 
 EXPOSE 8082
 
