@@ -37,17 +37,6 @@ const baseCattle = Array.from({ length: CATTLE_COUNT }, (_, index) => ({
   ],
 }))
 
-const herdAnchors = baseCattle.map((cow, index) => {
-  const isStray = index >= CATTLE_COUNT - STRAY_COUNT
-  const radius = isStray ? STRAY_RADIUS : CLUSTER_RADIUS
-  return {
-    lat: RANCH_CENTER.lat + randomBetween(-radius, radius),
-    lon: RANCH_CENTER.lon + randomBetween(-radius, radius),
-  }
-})
-
-let herdPositions = herdAnchors.map((anchor) => ({ ...anchor }))
-
 const gates = [
   { id: 'North Gate', status: 'closed', lat: RANCH_CENTER.lat + 0.02, lon: RANCH_CENTER.lon },
   { id: 'South Gate', status: 'open', lat: RANCH_CENTER.lat - 0.02, lon: RANCH_CENTER.lon + 0.002 },
@@ -62,6 +51,82 @@ const fencePolygon = [
   [RANCH_CENTER.lon - 0.035, RANCH_CENTER.lat + 0.035],
   [RANCH_CENTER.lon - 0.04, RANCH_CENTER.lat - 0.03],
 ]
+
+const fenceBounds = fencePolygon.reduce(
+  (acc, [lon, lat]) => ({
+    minLon: Math.min(acc.minLon, lon),
+    maxLon: Math.max(acc.maxLon, lon),
+    minLat: Math.min(acc.minLat, lat),
+    maxLat: Math.max(acc.maxLat, lat),
+  }),
+  {
+    minLon: Infinity,
+    maxLon: -Infinity,
+    minLat: Infinity,
+    maxLat: -Infinity,
+  }
+)
+
+const isPointInPolygon = (point, polygon) => {
+  const [x, y] = point
+  let inside = false
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i][0]
+    const yi = polygon[i][1]
+    const xj = polygon[j][0]
+    const yj = polygon[j][1]
+    const intersect = yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi
+    if (intersect) inside = !inside
+  }
+  return inside
+}
+
+const randomPointWithinFence = (radius) => {
+  const attempts = 60
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    let lat
+    let lon
+    if (attempt < attempts / 2) {
+      const angle = randomBetween(0, Math.PI * 2)
+      const distance = Math.random() * radius
+      lat = RANCH_CENTER.lat + Math.cos(angle) * distance
+      lon = RANCH_CENTER.lon + Math.sin(angle) * distance
+    } else {
+      lat = randomBetween(fenceBounds.minLat, fenceBounds.maxLat)
+      lon = randomBetween(fenceBounds.minLon, fenceBounds.maxLon)
+    }
+    if (isPointInPolygon([lon, lat], fencePolygon)) {
+      return { lat, lon }
+    }
+  }
+  return { lat: RANCH_CENTER.lat, lon: RANCH_CENTER.lon }
+}
+
+const constrainToFence = (lat, lon) => {
+  if (isPointInPolygon([lon, lat], fencePolygon)) {
+    return { lat, lon, breached: false }
+  }
+
+  let adjustedLat = lat
+  let adjustedLon = lon
+  for (let i = 0; i < 12; i++) {
+    adjustedLat = (adjustedLat + RANCH_CENTER.lat) / 2
+    adjustedLon = (adjustedLon + RANCH_CENTER.lon) / 2
+    if (isPointInPolygon([adjustedLon, adjustedLat], fencePolygon)) {
+      return { lat: adjustedLat, lon: adjustedLon, breached: true }
+    }
+  }
+  return { lat: RANCH_CENTER.lat, lon: RANCH_CENTER.lon, breached: true }
+}
+
+const herdAnchors = baseCattle.map((cow, index) => {
+  const isStray = index >= CATTLE_COUNT - STRAY_COUNT
+  const radius = isStray ? STRAY_RADIUS : CLUSTER_RADIUS
+  return randomPointWithinFence(radius)
+})
+
+let herdPositions = herdAnchors.map((anchor) => ({ ...anchor }))
+let fenceBreachActiveUntil = 0
 
 const randomVoltage = () => Number(randomBetween(6.5, 9.5).toFixed(2))
 const randomTroughLevel = () => Number(randomBetween(65, 100).toFixed(1))
@@ -117,6 +182,8 @@ app.get('/api/sensors', (_req, res) => {
   const networkBars = randomNetworkStrength()
   const openGate = gates.some((gate) => gate.status === 'open')
 
+  const breachActive = Date.now() < fenceBreachActiveUntil
+
   const sensors = {
     WATER: {
       status: waterLevel > 70 ? 'green' : 'yellow',
@@ -126,14 +193,20 @@ app.get('/api/sensors', (_req, res) => {
           ? `Average trough level across 12 monitors is ${waterLevel}% with auto-fill holding.`
           : `Refill recommended: trough level dipping to ${waterLevel}% across the line.`,
     },
-    FENCE: {
-      status: fenceVoltage >= 7.5 ? 'green' : 'red',
-      value: `${fenceVoltage} kV`,
-      detail:
-        fenceVoltage >= 7.5
-          ? `Perimeter voltage steady at ${fenceVoltage} kV; arcs synced.`
-          : `Voltage dip detected: ${fenceVoltage} kV average across perimeter nodes.`,
-    },
+    FENCE: breachActive
+      ? {
+          status: 'red',
+          value: 'breach',
+          detail: 'Perimeter breach intercept triggered — verify herd containment.',
+        }
+      : {
+          status: fenceVoltage >= 7.5 ? 'green' : 'red',
+          value: `${fenceVoltage} kV`,
+          detail:
+            fenceVoltage >= 7.5
+              ? `Perimeter voltage steady at ${fenceVoltage} kV; arcs synced.`
+              : `Voltage dip detected: ${fenceVoltage} kV average across perimeter nodes.`,
+        },
     GATE: {
       status: openGate ? 'yellow' : 'green',
       value: openGate ? 'open' : 'secured',
@@ -149,13 +222,23 @@ app.get('/api/sensors', (_req, res) => {
     },
   }
 
+  if (breachActive) {
+    sensors.ALERTS = {
+      status: 'red',
+      value: 'PERIMETER',
+      detail: 'Perimeter intrusion alarm active — drones and strobes deployed to herd perimeter.',
+    }
+  }
+
   const allGreen = Object.values(sensors).every((sensor) => sensor.status === 'green')
   sensors.SYSTEM = {
-    status: allGreen ? 'green' : 'yellow',
-    value: allGreen ? 'nominal' : 'review',
-    detail: allGreen
-      ? 'Automation, analytics, and failsafes nominal across the ranch stack.'
-      : 'System automation engaged with advisories from sub-systems.',
+    status: breachActive ? 'red' : allGreen ? 'green' : 'yellow',
+    value: breachActive ? 'breach' : allGreen ? 'nominal' : 'review',
+    detail: breachActive
+      ? 'Perimeter breach alarms engaged; live response teams dispatched to pasture.'
+      : allGreen
+          ? 'Automation, analytics, and failsafes nominal across the ranch stack.'
+          : 'System automation engaged with advisories from sub-systems.',
   }
 
   return res.json({ sensors })
@@ -170,7 +253,12 @@ app.get('/api/herd', (_req, res) => {
     const nextLat = clamp(position.lat + deltaLat, anchor.lat - MOVEMENT_LIMIT, anchor.lat + MOVEMENT_LIMIT)
     const nextLon = clamp(position.lon + deltaLon, anchor.lon - MOVEMENT_LIMIT, anchor.lon + MOVEMENT_LIMIT)
 
-    return { lat: nextLat, lon: nextLon }
+    const constrained = constrainToFence(nextLat, nextLon)
+    if (constrained.breached) {
+      fenceBreachActiveUntil = Date.now() + 120000
+    }
+
+    return { lat: constrained.lat, lon: constrained.lon }
   })
 
   const herd = baseCattle.map((cow, index) => ({

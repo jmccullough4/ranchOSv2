@@ -5,8 +5,9 @@ This repository contains a demo web application that simulates a smart livestock
 ## Features
 
 - **Authentication** – Login screen for operators `jay`, `kevin`, `april`, and `ashley` (password `3strands`).
-- **Sensor Command Center** – Real-time indicators for SYSTEM, WATER, FENCE, GATE, and NETWORK with rich hover tooltips summarizing trends and advisories.
+- **Sensor Command Center** – Real-time indicators for SYSTEM, WATER, FENCE, GATE, NETWORK, and ALERTS with rich hover tooltips summarizing trends and advisories.
 - **3D Globe Ranch View** – Mapbox satellite globe with live herd animation, stray detection, perimeter fence geometry, simulated gates, and a one-click ranch recenter action.
+- **Perimeter Safeguards** – Herd movement stays inside the ranch boundary and automatically escalates perimeter breach alarms if any cow presses the fence.
 - **Cow Insights** – Select any cow marker to view ID, weight, body temperature, and vaccine log in the insights panel.
 - **Chute Sync** – Live chute readout showing the latest scale transaction, operator, and notes.
 - **Security Cameras** – Quad camera wall for feeds `cam1`–`cam4` with predator alerts and offline states.
@@ -36,7 +37,7 @@ package.json             # npm scripts for build/start/dev
 - Docker 24+
 - A Mapbox access token with globe support (tileset: `mapbox.mapbox-terrain-dem-v1`).
 - Project assets:
-  - `frontend/public/static/logo.png` – Company logo (referenced in header and login overlay).
+  - `frontend/public/static/logo.png` – Company logo (referenced in header, login overlay, and browser tab icon).
   - `frontend/public/static/media/cameras/cam1.mp4` … `cam4.mp4` – Security camera demo clips for the quad wall.
 
 ## Running with Docker + npm
