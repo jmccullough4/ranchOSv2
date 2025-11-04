@@ -17,7 +17,7 @@ This repository contains a demo web application that simulates a smart livestock
 server/                  # Express simulation service and REST endpoints
 frontend/
   ├─ index.html          # Vite entry point
-  ├─ vite.config.js      # React + Vite configuration (base served from /static)
+  ├─ vite.config.js      # React + Vite configuration
   ├─ public/
   │   └─ static/
   │       ├─ logo.png              # Company logo (copy in before building)
@@ -62,7 +62,7 @@ package.json             # npm scripts for build/start/dev
 
 ## Development Notes
 
-- `npm run build` compiles the React application into `frontend/dist`, which the Express server serves from `/` and `/static`.
+- `npm run build` compiles the React application into `frontend/dist`, which the Express server serves from `/` (hashed assets) and `/static` (logo/camera media).
 - `npm run dev` starts a hot-reload environment with Vite for the UI and Nodemon for the Express simulator.
 - Sensor and herd data are randomized on each request to emulate a living ranch environment while keeping cattle drift subtle.
 - If the Mapbox token is not provided, the dashboard still loads but the globe remains inactive.
