@@ -1,6 +1,6 @@
 # 3 Strands Cattle Co. Smart Ranch Demo
 
-This repository contains a demo web application that simulates a smart livestock ranch for **3 Strands Cattle Co., LLC**. The polished dashboard is powered by a FastAPI backend and a React + Mapbox front end, orchestrated with **npm** inside Docker and exposed on port **8082**.
+This repository contains a demo web application that simulates a smart livestock ranch for **3 Strands Cattle Co., LLC**. The polished dashboard is powered by an Express simulation service and a React + Mapbox front end, orchestrated with **npm** inside Docker and exposed on port **8082**.
 
 ## Features
 
@@ -14,13 +14,14 @@ This repository contains a demo web application that simulates a smart livestock
 ## Project Structure
 
 ```
-backend/                 # FastAPI application with simulation endpoints
+server/                  # Express simulation service and REST endpoints
 frontend/
   ├─ index.html          # Vite entry point
   ├─ vite.config.js      # React + Vite configuration (base served from /static)
   ├─ public/
-  │   ├─ logo.png        # Company logo (copy in before building)
-  │   └─ media/cameras/  # Place cam1.mp4 … cam4.mp4 here
+  │   └─ static/
+  │       ├─ logo.png              # Company logo (copy in before building)
+  │       └─ media/cameras/        # Place cam1.mp4 … cam4.mp4 here
   └─ src/                # React application source
       ├─ App.jsx
       ├─ components/
@@ -28,7 +29,6 @@ frontend/
       └─ main.jsx
 Dockerfile
 package.json             # npm scripts for build/start/dev
-requirements.txt
 ```
 
 ## Prerequisites
@@ -36,37 +36,37 @@ requirements.txt
 - Docker 24+
 - A Mapbox access token with globe support (tileset: `mapbox.mapbox-terrain-dem-v1`).
 - Project assets:
-  - `frontend/public/logo.png` – Company logo (referenced in header and login).
-  - `frontend/public/media/cameras/cam1.mp4` … `cam4.mp4` – Security camera demo clips.
+  - `frontend/public/static/logo.png` – Company logo (referenced in header and login overlay).
+  - `frontend/public/static/media/cameras/cam1.mp4` … `cam4.mp4` – Security camera demo clips for the quad wall.
 
 ## Running with Docker + npm
 
 1. **Populate assets**
    ```bash
-   cp /path/to/logo.png frontend/public/logo.png
-   mkdir -p frontend/public/media/cameras
-   cp /path/to/cam1.mp4 frontend/public/media/cameras/
-   cp /path/to/cam2.mp4 frontend/public/media/cameras/
-   cp /path/to/cam3.mp4 frontend/public/media/cameras/
-   cp /path/to/cam4.mp4 frontend/public/media/cameras/
+    cp /path/to/logo.png frontend/public/static/logo.png
+    mkdir -p frontend/public/static/media/cameras
+    cp /path/to/cam1.mp4 frontend/public/static/media/cameras/
+    cp /path/to/cam2.mp4 frontend/public/static/media/cameras/
+    cp /path/to/cam3.mp4 frontend/public/static/media/cameras/
+    cp /path/to/cam4.mp4 frontend/public/static/media/cameras/
    ```
 
-2. **Launch the stack with Docker Compose** – The container builds the React UI via npm and starts FastAPI on port 8082.
+2. **Launch the stack with Docker Compose** – The container builds the React UI via npm and starts the Express simulator on port 8082.
    ```bash
    docker compose up --build --remove-orphans
    # shorthand supported on recent Docker versions: docker compose up --build -r
    ```
    The compose file injects the provided Mapbox token by default (`pk.eyJ1Ijoiam1jY3VsbG91Z2g0IiwiYSI6ImNtMGJvOXh3cDBjNncya3B4cDg0MXFuYnUifQ.uDJKnqE9WgkvGXYGLge-NQ`). Override it by exporting `MAPBOX_TOKEN` before running the command if needed.
 
-3. **Open the dashboard** – Visit [http://localhost:8082](http://localhost:8082) and log in with one of the operator accounts. The backend continuously simulates sensor, herd, gate, chute, and security events.
+3. **Open the dashboard** – Visit [http://localhost:8082](http://localhost:8082) and log in with one of the operator accounts. The Node service continuously simulates sensor, herd, gate, chute, and security events.
 
 ## Development Notes
 
-- `npm run build` compiles the React application into `frontend/dist`, which FastAPI serves from `/static`.
-- `npm run dev` starts a hot-reload environment with Vite for the UI and Uvicorn for the API (requires local Python 3.11).
-- Sensor and herd data are randomized on each request to emulate a living ranch environment.
+- `npm run build` compiles the React application into `frontend/dist`, which the Express server serves from `/` and `/static`.
+- `npm run dev` starts a hot-reload environment with Vite for the UI and Nodemon for the Express simulator.
+- Sensor and herd data are randomized on each request to emulate a living ranch environment while keeping cattle drift subtle.
 - If the Mapbox token is not provided, the dashboard still loads but the globe remains inactive.
-- Adjust simulation logic in `backend/app.py` to tailor cattle counts, geography, or alert thresholds.
+- Adjust simulation logic in `server/index.js` to tailor cattle counts, geography, or alert thresholds.
 
 ## License
 

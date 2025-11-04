@@ -239,7 +239,7 @@ function MapPanel({ token, center, herd, gates, fence, selectedCow, onSelectCow,
       map.remove()
       mapRef.current = null
     }
-  }, [token, center, herd, gates, fence, onSelectCow])
+  }, [token, center, onSelectCow])
 
   useEffect(() => {
     const map = mapRef.current

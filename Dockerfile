@@ -1,27 +1,27 @@
-FROM python:3.11-slim
+# syntax=docker/dockerfile:1
 
-ENV PYTHONUNBUFFERED=1
+FROM node:20-alpine AS base
 WORKDIR /app
 
-# Install Node.js + npm so the container can be controlled via npm scripts
-RUN apt-get update \
-    && apt-get install -y curl gnupg \
-    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
-    && apt-get install -y nodejs \
-    && apt-get purge -y --auto-remove curl gnupg \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY package*.json ./
+FROM base AS deps
+COPY package.json package-lock.json ./
 RUN npm install
 
-COPY backend backend
+FROM deps AS build
 COPY frontend frontend
-
+COPY server server
 RUN npm run build
+
+FROM base AS runtime
+ENV NODE_ENV=production
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm install --omit=dev
+
+COPY --from=build /app/server ./server
+COPY --from=build /app/frontend/dist ./frontend/dist
 
 EXPOSE 8082
 
-CMD ["npm", "run", "start"]
+CMD ["npm", "start"]
