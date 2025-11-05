@@ -120,7 +120,11 @@ function App() {
   const demoCursorRef = useRef(0)
 
   const pushNotification = useCallback(
-    (notification) => {
+    (notification, { bypassDemoGate = false } = {}) => {
+      if (!bypassDemoGate && (!demoMode || !isAuthenticated)) {
+        return
+      }
+
       const entry = {
         ...notification,
         id: notification.id || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -147,7 +151,7 @@ function App() {
         delete toastTimeoutsRef.current[entry.id]
       }, TOAST_DURATION_MS)
     },
-    []
+    [demoMode, isAuthenticated]
   )
 
   const handleDismissToast = useCallback((id) => {
