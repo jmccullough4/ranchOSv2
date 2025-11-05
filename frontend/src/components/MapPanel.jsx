@@ -52,6 +52,7 @@ const toFenceGeoJson = (fence) => ({
 function MapPanel({ token, center, herd, gates, fence, selectedCow, onSelectCow, stats }) {
   const mapContainerRef = useRef(null)
   const mapRef = useRef(null)
+  const selectedCowRef = useRef(selectedCow)
 
   useEffect(() => {
     if (!token || !center || mapRef.current || !mapContainerRef.current) return
@@ -126,15 +127,15 @@ function MapPanel({ token, center, herd, gates, fence, selectedCow, onSelectCow,
             ['linear'],
             ['zoom'],
             10,
-            5,
+            2.4,
             16,
-            12,
+            4.8,
           ],
           'circle-color': [
             'case',
             ['==', ['get', 'stray'], true],
             '#f97316',
-            '#22c55e',
+            '#b87333',
           ],
           'circle-opacity': 0.85,
           'circle-stroke-color': '#0f172a',
@@ -152,9 +153,9 @@ function MapPanel({ token, center, herd, gates, fence, selectedCow, onSelectCow,
             ['linear'],
             ['zoom'],
             10,
-            7,
+            3.4,
             16,
-            15,
+            5.8,
           ],
           'circle-color': '#f8fafc',
           'circle-opacity': 0.9,
@@ -173,18 +174,18 @@ function MapPanel({ token, center, herd, gates, fence, selectedCow, onSelectCow,
         type: 'circle',
         source: 'gates',
         paint: {
-          'circle-radius': 8,
+          'circle-radius': 2.4,
           'circle-color': [
             'match',
             ['get', 'status'],
             'open',
-            '#facc15',
+            '#ef4444',
             'closed',
-            '#38bdf8',
-            '#38bdf8',
+            '#22c55e',
+            '#22c55e',
           ],
           'circle-stroke-color': '#020617',
-          'circle-stroke-width': 2,
+          'circle-stroke-width': 1.2,
         },
       })
       map.addLayer({
@@ -209,13 +210,18 @@ function MapPanel({ token, center, herd, gates, fence, selectedCow, onSelectCow,
         if (!feature) return
         const coordinates = feature.geometry.coordinates
         const props = feature.properties
+        if (selectedCowRef.current?.id === props.id) {
+          selectedCowRef.current = null
+          onSelectCow(null)
+          return
+        }
         let vaccines = []
         try {
           vaccines = JSON.parse(props.vaccines)
         } catch (error) {
           vaccines = []
         }
-        onSelectCow({
+        const selection = {
           id: props.id,
           name: props.name,
           weight: Number(props.weight),
@@ -223,7 +229,9 @@ function MapPanel({ token, center, herd, gates, fence, selectedCow, onSelectCow,
           vaccines,
           lat: coordinates[1],
           lon: coordinates[0],
-        })
+        }
+        selectedCowRef.current = selection
+        onSelectCow(selection)
       })
       map.on('mouseenter', 'herd-points', () => {
         map.getCanvas().style.cursor = 'pointer'
@@ -274,6 +282,7 @@ function MapPanel({ token, center, herd, gates, fence, selectedCow, onSelectCow,
     if (selectedCow) {
       map.flyTo({ center: [selectedCow.lon, selectedCow.lat], zoom: 14.5, speed: 0.6 })
     }
+    selectedCowRef.current = selectedCow
   }, [selectedCow])
 
   const handleRecenter = () => {
@@ -314,7 +323,10 @@ function MapPanel({ token, center, herd, gates, fence, selectedCow, onSelectCow,
             ) : (
               gates.map((gate) => (
                 <li key={gate.id} className={gate.status === 'open' ? 'gate-open' : 'gate-closed'}>
-                  <span>{gate.id}</span>
+                  <span className="gate-label">
+                    <span className={`gate-indicator ${gate.status}`} aria-hidden="true" />
+                    {gate.id}
+                  </span>
                   <span>{gate.status === 'open' ? 'Open' : 'Secured'}</span>
                 </li>
               ))
