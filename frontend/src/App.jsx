@@ -10,12 +10,14 @@ import VaccinesPanel from './components/VaccinesPanel'
 import BrandWordmark from './components/BrandWordmark'
 import InsightsPanel from './components/InsightsPanel'
 import NotificationsTray from './components/NotificationsTray'
+import NotificationsCenter from './components/NotificationsCenter'
 
 const SENSOR_REFRESH_MS = 5000
 const HERD_REFRESH_MS = 4000
 const GATE_REFRESH_MS = 6000
 const CHUTE_REFRESH_MS = 8000
 const CAMERA_REFRESH_MS = 10000
+const TOAST_DURATION_MS = 6000
 
 const STRAY_DISTANCE_THRESHOLD = 0.03
 const MAX_CHUTE_LOG = 40
@@ -76,28 +78,102 @@ function App() {
   const [showVaccineModal, setShowVaccineModal] = useState(false)
   const [vaccineLog, setVaccineLog] = useState([])
   const [notifications, setNotifications] = useState([])
+  const [activeToasts, setActiveToasts] = useState([])
+  const [showNotificationCenter, setShowNotificationCenter] = useState(false)
   const [activePanel, setActivePanel] = useState('insights')
 
   const previousSensorsRef = useRef({})
   const previousGatesRef = useRef([])
   const previousCamerasRef = useRef({})
+  const previousCowIdRef = useRef(null)
+  const toastTimeoutsRef = useRef({})
 
-  const pushNotification = useCallback((notification) => {
-    const entry = {
-      ...notification,
-      id: notification.id || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      timestamp: notification.timestamp || new Date().toISOString(),
+  const pushNotification = useCallback(
+    (notification) => {
+      const entry = {
+        ...notification,
+        id: notification.id || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        timestamp: notification.timestamp || new Date().toISOString(),
+      }
+
+      setNotifications((previous) => {
+        const nextEntry = { ...entry, unread: true }
+        const filtered = previous.filter((item) => item.id !== nextEntry.id)
+        return [nextEntry, ...filtered].slice(0, 25)
+      })
+
+      setActiveToasts((previous) => {
+        const filtered = previous.filter((item) => item.id !== entry.id)
+        return [entry, ...filtered]
+      })
+
+      if (toastTimeoutsRef.current[entry.id]) {
+        clearTimeout(toastTimeoutsRef.current[entry.id])
+      }
+
+      toastTimeoutsRef.current[entry.id] = setTimeout(() => {
+        setActiveToasts((previous) => previous.filter((item) => item.id !== entry.id))
+        delete toastTimeoutsRef.current[entry.id]
+      }, TOAST_DURATION_MS)
+    },
+    []
+  )
+
+  const handleDismissToast = useCallback((id) => {
+    if (toastTimeoutsRef.current[id]) {
+      clearTimeout(toastTimeoutsRef.current[id])
+      delete toastTimeoutsRef.current[id]
     }
-    setNotifications((previous) => [entry, ...previous.filter((item) => item.id !== entry.id)].slice(0, 8))
+    setActiveToasts((previous) => previous.filter((notification) => notification.id !== id))
   }, [])
 
-  const dismissNotification = useCallback((id) => {
-    setNotifications((previous) => previous.filter((notification) => notification.id !== id))
+  const clearNotification = useCallback(
+    (id) => {
+      handleDismissToast(id)
+      setNotifications((previous) => previous.filter((notification) => notification.id !== id))
+    },
+    [handleDismissToast]
+  )
+
+  const clearAllNotifications = useCallback(() => {
+    Object.values(toastTimeoutsRef.current).forEach((timeoutId) => clearTimeout(timeoutId))
+    toastTimeoutsRef.current = {}
+    setActiveToasts([])
+    setNotifications([])
   }, [])
+
+  const markAllNotificationsRead = useCallback(() => {
+    setNotifications((previous) => previous.map((notification) => ({ ...notification, unread: false })))
+  }, [])
+
+  const handleToggleNotifications = useCallback(() => {
+    setShowNotificationCenter((previous) => {
+      const next = !previous
+      if (!previous) {
+        markAllNotificationsRead()
+      }
+      return next
+    })
+  }, [markAllNotificationsRead])
 
   const handleTogglePanel = useCallback((panel) => {
     setActivePanel((previous) => (previous === panel ? null : panel))
   }, [])
+
+  useEffect(() => {
+    return () => {
+      Object.values(toastTimeoutsRef.current).forEach((timeoutId) => clearTimeout(timeoutId))
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!showNotificationCenter) {
+      return
+    }
+    if (notifications.some((notification) => notification.unread)) {
+      markAllNotificationsRead()
+    }
+  }, [showNotificationCenter, notifications, markAllNotificationsRead])
 
   const fetchConfig = useCallback(async () => {
     try {
@@ -293,19 +369,26 @@ function App() {
       setShowChuteModal(false)
       setShowVaccineModal(false)
       setNotifications([])
+      setActiveToasts([])
+      setShowNotificationCenter(false)
       setActivePanel('insights')
       previousSensorsRef.current = {}
       previousGatesRef.current = []
       previousCamerasRef.current = {}
+      previousCowIdRef.current = null
+      Object.values(toastTimeoutsRef.current).forEach((timeoutId) => clearTimeout(timeoutId))
+      toastTimeoutsRef.current = {}
     }
   }, [isAuthenticated])
 
   useEffect(() => {
-    if (selectedCow) {
+    const previousId = previousCowIdRef.current
+    if (selectedCow?.id && selectedCow.id !== previousId) {
       setActivePanel('cow')
-    } else if (activePanel === 'cow') {
+    } else if (!selectedCow && activePanel === 'cow') {
       setActivePanel('insights')
     }
+    previousCowIdRef.current = selectedCow?.id || null
   }, [selectedCow, activePanel])
 
   const herdStats = useMemo(() => {
@@ -317,6 +400,10 @@ function App() {
   }, [herd, config.center])
 
   const sensorEntries = useMemo(() => Object.entries(sensors ?? {}), [sensors])
+  const unreadNotificationCount = useMemo(
+    () => notifications.filter((notification) => notification.unread).length,
+    [notifications]
+  )
 
   return (
     <div className="app-shell">
@@ -328,7 +415,17 @@ function App() {
             <p>ranchOS Operations Console</p>
           </div>
         </div>
-        <SensorBoard sensors={sensorEntries} />
+        <div className="header-actions">
+          <NotificationsCenter
+            notifications={notifications}
+            open={showNotificationCenter}
+            onToggle={handleToggleNotifications}
+            onClear={clearNotification}
+            onClearAll={clearAllNotifications}
+            unreadCount={unreadNotificationCount}
+          />
+          <SensorBoard sensors={sensorEntries} />
+        </div>
       </header>
 
       <main className="app-main">
@@ -382,7 +479,7 @@ function App() {
         </aside>
       </main>
 
-      <NotificationsTray notifications={notifications} onDismiss={dismissNotification} />
+      <NotificationsTray notifications={activeToasts} onDismiss={handleDismissToast} />
 
       <LoginOverlay visible={!isAuthenticated} error={loginError} onSubmit={handleLogin} />
 
