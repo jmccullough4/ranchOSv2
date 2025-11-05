@@ -1,4 +1,4 @@
-function CowDetails({ cow, collapsed, onToggle }) {
+function CowDetails({ cow, collapsed, onToggle, onClearSelection = () => {} }) {
   return (
     <section className={`details-card ${collapsed ? 'collapsed' : ''}`}>
       <div className="card-header-action">
@@ -8,7 +8,14 @@ function CowDetails({ cow, collapsed, onToggle }) {
             <span className="toggle-icon" aria-hidden="true" />
           </button>
         </h2>
-        {cow && <span className="badge subtle">Tag {cow.id}</span>}
+        <div className="card-meta">
+          {cow && <span className="badge subtle">Tag {cow.id}</span>}
+          {cow && (
+            <button type="button" className="ghost-link" onClick={onClearSelection}>
+              Clear
+            </button>
+          )}
+        </div>
       </div>
       {!collapsed && (
         <>

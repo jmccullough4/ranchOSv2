@@ -52,6 +52,7 @@ const toFenceGeoJson = (fence) => ({
 function MapPanel({ token, center, herd, gates, fence, selectedCow, onSelectCow, stats }) {
   const mapContainerRef = useRef(null)
   const mapRef = useRef(null)
+  const selectedCowRef = useRef(selectedCow)
 
   useEffect(() => {
     if (!token || !center || mapRef.current || !mapContainerRef.current) return
@@ -126,9 +127,9 @@ function MapPanel({ token, center, herd, gates, fence, selectedCow, onSelectCow,
             ['linear'],
             ['zoom'],
             10,
-            1.6,
+            2.4,
             16,
-            3.4,
+            4.8,
           ],
           'circle-color': [
             'case',
@@ -152,9 +153,9 @@ function MapPanel({ token, center, herd, gates, fence, selectedCow, onSelectCow,
             ['linear'],
             ['zoom'],
             10,
-            2.4,
+            3.4,
             16,
-            4.2,
+            5.8,
           ],
           'circle-color': '#f8fafc',
           'circle-opacity': 0.9,
@@ -173,7 +174,7 @@ function MapPanel({ token, center, herd, gates, fence, selectedCow, onSelectCow,
         type: 'circle',
         source: 'gates',
         paint: {
-          'circle-radius': 1.6,
+          'circle-radius': 2.4,
           'circle-color': [
             'match',
             ['get', 'status'],
@@ -209,13 +210,18 @@ function MapPanel({ token, center, herd, gates, fence, selectedCow, onSelectCow,
         if (!feature) return
         const coordinates = feature.geometry.coordinates
         const props = feature.properties
+        if (selectedCowRef.current?.id === props.id) {
+          selectedCowRef.current = null
+          onSelectCow(null)
+          return
+        }
         let vaccines = []
         try {
           vaccines = JSON.parse(props.vaccines)
         } catch (error) {
           vaccines = []
         }
-        onSelectCow({
+        const selection = {
           id: props.id,
           name: props.name,
           weight: Number(props.weight),
@@ -223,7 +229,9 @@ function MapPanel({ token, center, herd, gates, fence, selectedCow, onSelectCow,
           vaccines,
           lat: coordinates[1],
           lon: coordinates[0],
-        })
+        }
+        selectedCowRef.current = selection
+        onSelectCow(selection)
       })
       map.on('mouseenter', 'herd-points', () => {
         map.getCanvas().style.cursor = 'pointer'
@@ -274,6 +282,7 @@ function MapPanel({ token, center, herd, gates, fence, selectedCow, onSelectCow,
     if (selectedCow) {
       map.flyTo({ center: [selectedCow.lon, selectedCow.lat], zoom: 14.5, speed: 0.6 })
     }
+    selectedCowRef.current = selectedCow
   }, [selectedCow])
 
   const handleRecenter = () => {

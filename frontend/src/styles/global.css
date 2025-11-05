@@ -64,9 +64,9 @@ body, html, #root {
 
 .brand-wordmark {
   margin: 0;
-  font-size: 1.65rem;
+  font-size: clamp(1.35rem, 1.2vw + 1rem, 1.65rem);
   font-weight: 300;
-  letter-spacing: 0.35rem;
+  letter-spacing: clamp(0.22rem, 0.35vw + 0.08rem, 0.35rem);
   color: var(--copper-50);
   white-space: nowrap;
   display: block;
@@ -84,6 +84,79 @@ body, html, #root {
   display: flex;
   align-items: center;
   gap: 1.5rem;
+}
+
+.demo-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.85rem 0.35rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid rgba(217, 146, 82, 0.35);
+  background: rgba(15, 23, 42, 0.6);
+  color: rgba(240, 210, 172, 0.85);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.demo-toggle:focus-within {
+  box-shadow: 0 0 0 2px rgba(217, 146, 82, 0.35);
+}
+
+.demo-toggle input {
+  display: none;
+}
+
+.demo-toggle-track {
+  width: 2.6rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  border: 1px solid rgba(217, 146, 82, 0.45);
+  background: rgba(2, 6, 23, 0.8);
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.25rem;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.demo-toggle-thumb {
+  width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 50%;
+  background: rgba(217, 146, 82, 0.65);
+  box-shadow: 0 4px 10px rgba(2, 6, 23, 0.45);
+  transform: translateX(0);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.demo-toggle-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.demo-toggle.active {
+  border-color: rgba(217, 146, 82, 0.75);
+  background: rgba(217, 146, 82, 0.15);
+}
+
+.demo-toggle.active .demo-toggle-track {
+  background: rgba(217, 146, 82, 0.35);
+  border-color: rgba(217, 146, 82, 0.75);
+}
+
+.demo-toggle.active .demo-toggle-thumb {
+  transform: translateX(1.15rem);
+  background: #f0d2ac;
+}
+
+.demo-toggle input:disabled + .demo-toggle-track {
+  filter: grayscale(0.4);
+  opacity: 0.6;
+}
+
+.demo-toggle input:disabled ~ .demo-toggle-label {
+  opacity: 0.6;
 }
 
 .notifications-center {
@@ -594,6 +667,12 @@ body, html, #root {
   margin-bottom: 0;
 }
 
+.card-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .card-header-action h2 {
   margin: 0;
 }
@@ -654,6 +733,29 @@ body, html, #root {
   background: rgba(148, 163, 184, 0.2);
   border-color: rgba(148, 163, 184, 0.45);
   color: rgba(226, 232, 240, 0.9);
+}
+
+.ghost-link {
+  border: none;
+  background: transparent;
+  color: rgba(240, 210, 172, 0.85);
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25rem;
+}
+
+.ghost-link:hover {
+  color: var(--copper-200);
+}
+
+.ghost-link:focus-visible {
+  outline: 2px solid rgba(217, 146, 82, 0.65);
+  outline-offset: 2px;
 }
 
 .details-note {
@@ -1272,9 +1374,35 @@ body, html, #root {
 }
 
 @media (max-width: 1280px) {
+  .app-header {
+    padding: 1.25rem 1.5rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.25rem;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
   .app-main {
     grid-template-columns: 1fr;
     grid-template-rows: minmax(0, 1.1fr) minmax(0, 1fr);
+    padding: 1.25rem 1.5rem 1.75rem;
+    gap: 1.25rem;
+  }
+
+  .map-panel {
+    min-height: 420px;
+  }
+
+  .map-overlay {
+    position: static;
+    margin-top: 1.25rem;
+    width: 100%;
   }
 
   .details-panel {

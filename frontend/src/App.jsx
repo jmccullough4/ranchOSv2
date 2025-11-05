@@ -18,6 +18,34 @@ const GATE_REFRESH_MS = 6000
 const CHUTE_REFRESH_MS = 8000
 const CAMERA_REFRESH_MS = 10000
 const TOAST_DURATION_MS = 6000
+const DEMO_NOTIFICATION_INTERVAL_MS = 7000
+
+const DEMO_NOTIFICATIONS = [
+  {
+    type: 'sensor',
+    level: 'alert',
+    title: 'North pasture moisture critical',
+    message: 'Soil humidity dropped below 8% in zone 3 — dispatch irrigation.',
+  },
+  {
+    type: 'gate',
+    level: 'warning',
+    title: 'South chute gate opened',
+    message: 'Gate SC-2 unlatched for 2 minutes. Confirm hands are on site.',
+  },
+  {
+    type: 'predator',
+    level: 'alert',
+    title: 'Thermal signature detected',
+    message: 'CAM3 spotted coyote movement near the calving barn perimeter.',
+  },
+  {
+    type: 'sensor',
+    level: 'info',
+    title: 'Generator check-in',
+    message: 'Backup generator completed self-test without issues.',
+  },
+]
 
 const STRAY_DISTANCE_THRESHOLD = 0.03
 const MAX_CHUTE_LOG = 40
@@ -81,12 +109,15 @@ function App() {
   const [activeToasts, setActiveToasts] = useState([])
   const [showNotificationCenter, setShowNotificationCenter] = useState(false)
   const [activePanel, setActivePanel] = useState('insights')
+  const [demoMode, setDemoMode] = useState(false)
 
   const previousSensorsRef = useRef({})
   const previousGatesRef = useRef([])
   const previousCamerasRef = useRef({})
   const previousCowIdRef = useRef(null)
   const toastTimeoutsRef = useRef({})
+  const demoIntervalRef = useRef(null)
+  const demoCursorRef = useRef(0)
 
   const pushNotification = useCallback(
     (notification) => {
@@ -160,9 +191,31 @@ function App() {
     setActivePanel((previous) => (previous === panel ? null : panel))
   }, [])
 
+  const handleToggleDemoMode = useCallback(() => {
+    setDemoMode((previous) => !previous)
+  }, [])
+
+  const handleSelectCow = useCallback((cow) => {
+    if (!cow) {
+      setSelectedCow(null)
+      return
+    }
+
+    setSelectedCow((previous) => {
+      if (previous?.id === cow.id) {
+        return { ...previous, ...cow }
+      }
+      return cow
+    })
+  }, [])
+
   useEffect(() => {
     return () => {
       Object.values(toastTimeoutsRef.current).forEach((timeoutId) => clearTimeout(timeoutId))
+      if (demoIntervalRef.current) {
+        clearInterval(demoIntervalRef.current)
+        demoIntervalRef.current = null
+      }
     }
   }, [])
 
@@ -174,6 +227,59 @@ function App() {
       markAllNotificationsRead()
     }
   }, [showNotificationCenter, notifications, markAllNotificationsRead])
+
+  useEffect(() => {
+    if (!demoMode) {
+      demoCursorRef.current = 0
+    }
+  }, [demoMode])
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      if (demoIntervalRef.current) {
+        clearInterval(demoIntervalRef.current)
+        demoIntervalRef.current = null
+      }
+      setDemoMode(false)
+      demoCursorRef.current = 0
+    }
+  }, [isAuthenticated])
+
+  useEffect(() => {
+    if (!isAuthenticated || !demoMode) {
+      if (demoIntervalRef.current) {
+        clearInterval(demoIntervalRef.current)
+        demoIntervalRef.current = null
+      }
+      return
+    }
+
+    pushNotification({
+      type: 'system',
+      level: 'info',
+      title: 'Demo mode activated',
+      message: 'Simulated ranch alerts will roll in automatically.',
+    })
+
+    const emitNext = () => {
+      const blueprint = DEMO_NOTIFICATIONS[demoCursorRef.current % DEMO_NOTIFICATIONS.length]
+      demoCursorRef.current += 1
+      pushNotification({
+        ...blueprint,
+        id: `demo-${Date.now()}-${demoCursorRef.current}`,
+      })
+    }
+
+    emitNext()
+    demoIntervalRef.current = setInterval(emitNext, DEMO_NOTIFICATION_INTERVAL_MS)
+
+    return () => {
+      if (demoIntervalRef.current) {
+        clearInterval(demoIntervalRef.current)
+        demoIntervalRef.current = null
+      }
+    }
+  }, [demoMode, isAuthenticated, pushNotification])
 
   const fetchConfig = useCallback(async () => {
     try {
@@ -378,6 +484,11 @@ function App() {
       previousCowIdRef.current = null
       Object.values(toastTimeoutsRef.current).forEach((timeoutId) => clearTimeout(timeoutId))
       toastTimeoutsRef.current = {}
+      if (demoIntervalRef.current) {
+        clearInterval(demoIntervalRef.current)
+        demoIntervalRef.current = null
+      }
+      demoCursorRef.current = 0
     }
   }, [isAuthenticated])
 
@@ -416,6 +527,21 @@ function App() {
           </div>
         </div>
         <div className="header-actions">
+          <label
+            className={`demo-toggle ${demoMode ? 'active' : ''}`}
+            title={isAuthenticated ? 'Trigger simulated ranch alerts' : 'Login to enable demo mode'}
+          >
+            <input
+              type="checkbox"
+              checked={demoMode}
+              onChange={handleToggleDemoMode}
+              disabled={!isAuthenticated}
+            />
+            <span className="demo-toggle-track" aria-hidden>
+              <span className="demo-toggle-thumb" />
+            </span>
+            <span className="demo-toggle-label">Demo mode</span>
+          </label>
           <NotificationsCenter
             notifications={notifications}
             open={showNotificationCenter}
@@ -437,7 +563,7 @@ function App() {
             herd={herd}
             gates={gates}
             selectedCow={selectedCow}
-            onSelectCow={setSelectedCow}
+            onSelectCow={handleSelectCow}
             stats={herdStats}
           />
         </section>
@@ -456,6 +582,7 @@ function App() {
             cow={selectedCow}
             collapsed={activePanel !== 'cow'}
             onToggle={() => handleTogglePanel('cow')}
+            onClearSelection={() => handleSelectCow(null)}
           />
           <ChutePanel
             reading={chute}
