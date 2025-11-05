@@ -7,6 +7,8 @@ import CamerasPanel from './components/CamerasPanel'
 import LoginOverlay from './components/LoginOverlay'
 import Modal from './components/Modal'
 import VaccinesPanel from './components/VaccinesPanel'
+import BrandWordmark from './components/BrandWordmark'
+import InsightsPanel from './components/InsightsPanel'
 
 const SENSOR_REFRESH_MS = 5000
 const HERD_REFRESH_MS = 4000
@@ -231,7 +233,7 @@ function App() {
         <div className="brand">
           <img src="/static/logo.png" alt="3 Strands Cattle Co." className="brand-logo" />
           <div className="brand-text">
-            <h1>3  S T R A N D S  C A T T L E  CO.</h1>
+            <BrandWordmark as="h1" />
             <p>ranchOS Operations Console</p>
           </div>
         </div>
@@ -252,6 +254,14 @@ function App() {
           />
         </section>
         <aside className="details-panel">
+          <InsightsPanel
+            herd={herd}
+            herdStats={herdStats}
+            sensors={sensorEntries}
+            gates={gates}
+            chuteLog={chuteLog}
+            cameras={cameras}
+          />
           <CowDetails cow={selectedCow} />
           <ChutePanel reading={chute} onOpenLog={() => setShowChuteModal(true)} logCount={chuteLog.length} />
           <VaccinesPanel onOpenLog={() => setShowVaccineModal(true)} upcomingCount={vaccineLog.length} />
@@ -261,11 +271,23 @@ function App() {
 
       <LoginOverlay visible={!isAuthenticated} error={loginError} onSubmit={handleLogin} />
 
-      <Modal open={!!cameraViewing} title={cameraViewing ? `${cameraViewing.camera.toUpperCase()} • ${cameraViewing.location}` : ''} onClose={() => setCameraViewing(null)} size="lg">
+      <Modal
+        open={!!cameraViewing}
+        title={cameraViewing ? `${cameraViewing.camera.toUpperCase()} • ${cameraViewing.location}` : ''}
+        onClose={() => setCameraViewing(null)}
+        size="lg"
+      >
         {cameraViewing && cameraViewing.status === 'online' ? (
           <div className="camera-modal-player">
-            <video controls autoPlay loop playsInline>
-              <source src={`/media/cameras/${cameraViewing.camera}.mp4`} type="video/mp4" />
+            <video
+              key={cameraViewing.camera}
+              controls
+              autoPlay
+              loop
+              playsInline
+              muted
+              src={cameraViewing.media || `/media/cameras/${cameraViewing.camera}.mp4`}
+            >
               {`Camera feed ${cameraViewing.camera.toUpperCase()} unavailable`}
             </video>
           </div>

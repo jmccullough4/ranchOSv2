@@ -1,5 +1,12 @@
 const CAMERA_ORDER = ['cam1', 'cam2', 'cam3', 'cam4']
 
+const CAMERA_MEDIA = {
+  cam1: '/media/cameras/cam1.mp4',
+  cam2: '/media/cameras/cam2.mp4',
+  cam3: '/media/cameras/cam3.mp4',
+  cam4: '/media/cameras/cam4.mp4',
+}
+
 function CamerasPanel({ cameras, onOpenCamera }) {
   const feeds = CAMERA_ORDER.map((id) =>
     cameras.find((camera) => camera.camera === id) || {
@@ -27,11 +34,30 @@ function CamerasPanel({ cameras, onOpenCamera }) {
                   <button
                     type="button"
                     className="camera-thumbnail"
-                    onClick={() => onOpenCamera?.(feed)}
+                    onClick={() =>
+                      onOpenCamera?.({
+                        ...feed,
+                        media: CAMERA_MEDIA[feed.camera] || `/media/cameras/${feed.camera}.mp4`,
+                      })
+                    }
                     aria-label={`View ${feed.camera} live stream`}
                   >
-                    <span className="camera-thumbnail-icon" aria-hidden="true">▶</span>
-                    <span className="camera-thumbnail-copy">Tap to expand live view</span>
+                    <video
+                      key={feed.camera}
+                      className="camera-preview"
+                      src={CAMERA_MEDIA[feed.camera] || `/media/cameras/${feed.camera}.mp4`}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      preload="metadata"
+                    />
+                    <span className="camera-thumbnail-overlay">
+                      <span className="camera-thumbnail-icon" aria-hidden="true">
+                        ▶
+                      </span>
+                      <span className="camera-thumbnail-copy">Expand live view</span>
+                    </span>
                   </button>
                 ) : (
                   <div className="camera-offline">Feed unavailable</div>
