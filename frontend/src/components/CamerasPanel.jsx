@@ -22,7 +22,10 @@ function CamerasPanel({ cameras }) {
               {feed.status === 'offline' ? (
                 <div className="camera-offline">Feed unavailable</div>
               ) : (
-                <video src={`/static/media/cameras/${feed.camera}.mp4`} muted autoPlay loop playsInline />
+                <video muted autoPlay loop playsInline>
+                  <source src={`/static/media/cameras/${feed.camera}.mp4`} type="video/mp4" />
+                  {`Camera feed ${feed.camera.toUpperCase()} unavailable`}
+                </video>
               )}
             </div>
             <div className="camera-footer">

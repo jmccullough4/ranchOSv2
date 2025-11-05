@@ -17,7 +17,7 @@ function LoginOverlay({ visible, error, onSubmit }) {
     <div className={`login-overlay ${visible ? 'visible' : ''}`}>
       <form className="login-card" onSubmit={handleSubmit}>
         <img src="/static/logo.png" alt="3 Strands Cattle Co. logo" />
-        <h2>routerOS Login</h2>
+        <h2>ranchOS Login</h2>
         <label>
           Username
           <input name="username" type="text" value={formState.username} onChange={handleChange} required autoComplete="username" />
@@ -26,7 +26,7 @@ function LoginOverlay({ visible, error, onSubmit }) {
           Password
           <input name="password" type="password" value={formState.password} onChange={handleChange} required autoComplete="current-password" />
         </label>
-        <button type="submit">Enter routerOS</button>
+        <button type="submit">Enter ranchOS</button>
         {error && <p className="login-error">{error}</p>}
       </form>
     </div>
