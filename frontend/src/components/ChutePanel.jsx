@@ -1,7 +1,15 @@
-function ChutePanel({ reading }) {
+function ChutePanel({ reading, onOpenLog, logCount }) {
+  const formattedCount = new Intl.NumberFormat('en-US').format(logCount ?? 0)
+
   return (
     <section className="details-card">
-      <h2>Chute Sync</h2>
+      <div className="card-header-action">
+        <h2>Chute Sync</h2>
+        <button type="button" className="text-button" onClick={onOpenLog}>
+          View log
+          <span className="badge subtle">{formattedCount}</span>
+        </button>
+      </div>
       {!reading ? (
         <div className="details-empty">Awaiting chute synchronization…</div>
       ) : (
