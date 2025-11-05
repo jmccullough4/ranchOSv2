@@ -126,9 +126,9 @@ function MapPanel({ token, center, herd, gates, fence, selectedCow, onSelectCow,
             ['linear'],
             ['zoom'],
             10,
-            3.5,
+            1.75,
             16,
-            8.5,
+            4.25,
           ],
           'circle-color': [
             'case',
@@ -152,9 +152,9 @@ function MapPanel({ token, center, herd, gates, fence, selectedCow, onSelectCow,
             ['linear'],
             ['zoom'],
             10,
-            6,
+            3,
             16,
-            12,
+            6,
           ],
           'circle-color': '#f8fafc',
           'circle-opacity': 0.9,
@@ -173,18 +173,18 @@ function MapPanel({ token, center, herd, gates, fence, selectedCow, onSelectCow,
         type: 'circle',
         source: 'gates',
         paint: {
-          'circle-radius': 8,
+          'circle-radius': 2.5,
           'circle-color': [
             'match',
             ['get', 'status'],
             'open',
-            '#facc15',
+            '#ef4444',
             'closed',
-            '#38bdf8',
-            '#38bdf8',
+            '#22c55e',
+            '#22c55e',
           ],
           'circle-stroke-color': '#020617',
-          'circle-stroke-width': 2,
+          'circle-stroke-width': 1,
         },
       })
       map.addLayer({
@@ -314,7 +314,10 @@ function MapPanel({ token, center, herd, gates, fence, selectedCow, onSelectCow,
             ) : (
               gates.map((gate) => (
                 <li key={gate.id} className={gate.status === 'open' ? 'gate-open' : 'gate-closed'}>
-                  <span>{gate.id}</span>
+                  <span className="gate-label">
+                    <span className={`gate-indicator ${gate.status}`} aria-hidden="true" />
+                    {gate.id}
+                  </span>
                   <span>{gate.status === 'open' ? 'Open' : 'Secured'}</span>
                 </li>
               ))

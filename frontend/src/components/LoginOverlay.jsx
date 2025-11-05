@@ -17,6 +17,8 @@ function LoginOverlay({ visible, error, onSubmit }) {
     <div className={`login-overlay ${visible ? 'visible' : ''}`}>
       <form className="login-card" onSubmit={handleSubmit}>
         <img src="/static/logo.png" alt="3 Strands Cattle Co. logo" />
+        <h1>3  S T R A N D S  C A T T L E  CO.</h1>
+        <p className="login-subtitle">Access the ranchOS console</p>
         <h2>ranchOS login</h2>
         <label>
           Username
