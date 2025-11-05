@@ -17,7 +17,7 @@ function LoginOverlay({ visible, error, onSubmit }) {
     <div className={`login-overlay ${visible ? 'visible' : ''}`}>
       <form className="login-card" onSubmit={handleSubmit}>
         <img src="/static/logo.png" alt="3 Strands Cattle Co. logo" />
-        <h2>ranchOS Login</h2>
+        <h2>ranchOS login</h2>
         <label>
           Username
           <input name="username" type="text" value={formState.username} onChange={handleChange} required autoComplete="username" />

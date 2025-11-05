@@ -530,11 +530,13 @@ body, html, #root {
   color: rgba(148, 163, 184, 0.9);
 }
 
-  .login-overlay {
+.login-overlay {
     position: fixed;
     inset: 0;
     backdrop-filter: blur(22px);
-    background: rgba(1, 6, 14, 0.92);
+    background:
+      linear-gradient(rgba(1, 6, 14, 0.88), rgba(1, 6, 14, 0.9)),
+      url('/bg.png') center/cover no-repeat;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -569,8 +571,8 @@ body, html, #root {
 
 .login-card h2 {
   margin: 0;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-transform: none;
   color: rgba(226, 232, 240, 0.9);
 }
 

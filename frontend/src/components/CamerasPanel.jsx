@@ -23,7 +23,7 @@ function CamerasPanel({ cameras }) {
                 <div className="camera-offline">Feed unavailable</div>
               ) : (
                 <video muted autoPlay loop playsInline>
-                  <source src={`/static/media/cameras/${feed.camera}.mp4`} type="video/mp4" />
+                  <source src={`/media/cameras/${feed.camera}.mp4`} type="video/mp4" />
                   {`Camera feed ${feed.camera.toUpperCase()} unavailable`}
                 </video>
               )}
