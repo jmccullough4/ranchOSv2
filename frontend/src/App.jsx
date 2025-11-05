@@ -180,9 +180,9 @@ function App() {
       <header className="app-header">
         <div className="brand">
           <img src="/static/logo.png" alt="3 Strands Cattle Co." className="brand-logo" />
-          <div>
-            <h1>3 Strands Cattle Co., LLC</h1>
-            <p>Smart Ranch Operations Center</p>
+          <div className="brand-text">
+            <h1>3  S T R A N D S  C A T T L E  CO.</h1>
+            <p>ranchOS Operations Console</p>
           </div>
         </div>
         <SensorBoard sensors={sensorEntries} />
