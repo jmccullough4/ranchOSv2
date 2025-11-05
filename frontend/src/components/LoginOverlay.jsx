@@ -1,6 +1,4 @@
 import { useState } from 'react'
-import BrandWordmark from './BrandWordmark'
-
 function LoginOverlay({ visible, error, onSubmit }) {
   const [formState, setFormState] = useState({ username: '', password: '' })
 
@@ -18,7 +16,6 @@ function LoginOverlay({ visible, error, onSubmit }) {
     <div className={`login-overlay ${visible ? 'visible' : ''}`}>
       <form className="login-card" onSubmit={handleSubmit}>
         <img src="/static/logo.png" alt="3 Strands Cattle Co. logo" />
-        <BrandWordmark as="h1" className="login-wordmark" />
         <p className="login-subtitle">Access the ranchOS console</p>
         <h2>ranchOS login</h2>
         <label>

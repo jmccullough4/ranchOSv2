@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import MapPanel from './components/MapPanel'
 import SensorBoard from './components/SensorBoard'
 import CowDetails from './components/CowDetails'
@@ -9,6 +9,7 @@ import Modal from './components/Modal'
 import VaccinesPanel from './components/VaccinesPanel'
 import BrandWordmark from './components/BrandWordmark'
 import InsightsPanel from './components/InsightsPanel'
+import NotificationsTray from './components/NotificationsTray'
 
 const SENSOR_REFRESH_MS = 5000
 const HERD_REFRESH_MS = 4000
@@ -74,6 +75,29 @@ function App() {
   const [showChuteModal, setShowChuteModal] = useState(false)
   const [showVaccineModal, setShowVaccineModal] = useState(false)
   const [vaccineLog, setVaccineLog] = useState([])
+  const [notifications, setNotifications] = useState([])
+  const [activePanel, setActivePanel] = useState('insights')
+
+  const previousSensorsRef = useRef({})
+  const previousGatesRef = useRef([])
+  const previousCamerasRef = useRef({})
+
+  const pushNotification = useCallback((notification) => {
+    const entry = {
+      ...notification,
+      id: notification.id || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      timestamp: notification.timestamp || new Date().toISOString(),
+    }
+    setNotifications((previous) => [entry, ...previous.filter((item) => item.id !== entry.id)].slice(0, 8))
+  }, [])
+
+  const dismissNotification = useCallback((id) => {
+    setNotifications((previous) => previous.filter((notification) => notification.id !== id))
+  }, [])
+
+  const handleTogglePanel = useCallback((panel) => {
+    setActivePanel((previous) => (previous === panel ? null : panel))
+  }, [])
 
   const fetchConfig = useCallback(async () => {
     try {
@@ -95,11 +119,24 @@ function App() {
       const response = await fetch('/api/sensors')
       if (!response.ok) throw new Error('Sensor endpoint failed')
       const data = await response.json()
-      setSensors(data.sensors)
+      const nextSensors = data.sensors || {}
+      const previous = previousSensorsRef.current || {}
+      Object.entries(nextSensors).forEach(([key, reading]) => {
+        if (reading?.status === 'red' && previous[key]?.status !== 'red') {
+          pushNotification({
+            type: 'sensor',
+            level: 'alert',
+            title: `${key} sensor alert`,
+            message: reading.detail || `${key} reported a critical condition.`,
+          })
+        }
+      })
+      previousSensorsRef.current = nextSensors
+      setSensors(nextSensors)
     } catch (error) {
       console.error(error)
     }
-  }, [])
+  }, [pushNotification])
 
   const fetchHerd = useCallback(async () => {
     try {
@@ -118,11 +155,35 @@ function App() {
       const response = await fetch('/api/gates')
       if (!response.ok) throw new Error('Gates endpoint failed')
       const data = await response.json()
-      setGates(data.gates)
+      const previous = previousGatesRef.current || []
+      const nextGates = data.gates || []
+      nextGates.forEach((gate) => {
+        const previousGate = previous.find((entry) => entry.id === gate.id)
+        if (previousGate && previousGate.status !== gate.status) {
+          pushNotification({
+            type: 'gate',
+            level: gate.status === 'open' ? 'warning' : 'success',
+            title: `${gate.id} ${gate.status === 'open' ? 'opened' : 'secured'}`,
+            message:
+              gate.status === 'open'
+                ? 'Perimeter gate opened — confirm this is expected.'
+                : 'Perimeter gate locked and secured.',
+          })
+        } else if (!previousGate && gate.status === 'open') {
+          pushNotification({
+            type: 'gate',
+            level: 'warning',
+            title: `${gate.id} opened`,
+            message: 'Perimeter gate opened — confirm this is expected.',
+          })
+        }
+      })
+      previousGatesRef.current = nextGates
+      setGates(nextGates)
     } catch (error) {
       console.error(error)
     }
-  }, [])
+  }, [pushNotification])
 
   const fetchChute = useCallback(async () => {
     try {
@@ -144,11 +205,28 @@ function App() {
       const response = await fetch('/api/cameras')
       if (!response.ok) throw new Error('Camera endpoint failed')
       const data = await response.json()
-      setCameras(data.cameras)
+      const previous = previousCamerasRef.current || {}
+      const nextCameras = data.cameras || []
+      nextCameras.forEach((camera) => {
+        const previousCamera = previous[camera.camera]
+        if (camera.predator_detected && !previousCamera?.predator_detected) {
+          pushNotification({
+            type: 'predator',
+            level: 'alert',
+            title: `Predator near ${camera.location}`,
+            message: `${camera.camera.toUpperCase()} flagged predator movement.`,
+          })
+        }
+      })
+      previousCamerasRef.current = nextCameras.reduce((accumulator, camera) => {
+        accumulator[camera.camera] = camera
+        return accumulator
+      }, {})
+      setCameras(nextCameras)
     } catch (error) {
       console.error(error)
     }
-  }, [])
+  }, [pushNotification])
 
   useEffect(() => {
     fetchConfig()
@@ -214,8 +292,21 @@ function App() {
       setCameraViewing(null)
       setShowChuteModal(false)
       setShowVaccineModal(false)
+      setNotifications([])
+      setActivePanel('insights')
+      previousSensorsRef.current = {}
+      previousGatesRef.current = []
+      previousCamerasRef.current = {}
     }
   }, [isAuthenticated])
+
+  useEffect(() => {
+    if (selectedCow) {
+      setActivePanel('cow')
+    } else if (activePanel === 'cow') {
+      setActivePanel('insights')
+    }
+  }, [selectedCow, activePanel])
 
   const herdStats = useMemo(() => {
     if (!herd.length || !config.center) {
@@ -255,6 +346,8 @@ function App() {
         </section>
         <aside className="details-panel">
           <InsightsPanel
+            collapsed={activePanel !== 'insights'}
+            onToggle={() => handleTogglePanel('insights')}
             herd={herd}
             herdStats={herdStats}
             sensors={sensorEntries}
@@ -262,12 +355,34 @@ function App() {
             chuteLog={chuteLog}
             cameras={cameras}
           />
-          <CowDetails cow={selectedCow} />
-          <ChutePanel reading={chute} onOpenLog={() => setShowChuteModal(true)} logCount={chuteLog.length} />
-          <VaccinesPanel onOpenLog={() => setShowVaccineModal(true)} upcomingCount={vaccineLog.length} />
-          <CamerasPanel cameras={cameras} onOpenCamera={setCameraViewing} />
+          <CowDetails
+            cow={selectedCow}
+            collapsed={activePanel !== 'cow'}
+            onToggle={() => handleTogglePanel('cow')}
+          />
+          <ChutePanel
+            reading={chute}
+            onOpenLog={() => setShowChuteModal(true)}
+            logCount={chuteLog.length}
+            collapsed={activePanel !== 'chute'}
+            onToggle={() => handleTogglePanel('chute')}
+          />
+          <VaccinesPanel
+            onOpenLog={() => setShowVaccineModal(true)}
+            upcomingCount={vaccineLog.length}
+            collapsed={activePanel !== 'vaccines'}
+            onToggle={() => handleTogglePanel('vaccines')}
+          />
+          <CamerasPanel
+            cameras={cameras}
+            onOpenCamera={setCameraViewing}
+            collapsed={activePanel !== 'cameras'}
+            onToggle={() => handleTogglePanel('cameras')}
+          />
         </aside>
       </main>
+
+      <NotificationsTray notifications={notifications} onDismiss={dismissNotification} />
 
       <LoginOverlay visible={!isAuthenticated} error={loginError} onSubmit={handleLogin} />
 

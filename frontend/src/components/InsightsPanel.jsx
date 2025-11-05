@@ -37,7 +37,7 @@ const Sparkline = ({ values, gradientId }) => {
   )
 }
 
-function InsightsPanel({ herd, herdStats, sensors, gates, chuteLog, cameras }) {
+function InsightsPanel({ herd, herdStats, sensors, gates, chuteLog, cameras, collapsed, onToggle }) {
   const averageWeight = useMemo(() => {
     if (!herd.length) return 0
     const total = herd.reduce((sum, cow) => sum + (cow.weight || 0), 0)
@@ -88,15 +88,21 @@ function InsightsPanel({ herd, herdStats, sensors, gates, chuteLog, cameras }) {
   )
 
   return (
-    <section className="details-card insights-card">
+    <section className={`details-card insights-card ${collapsed ? 'collapsed' : ''}`}>
       <div className="card-header-action">
-        <h2>Ranch Intelligence</h2>
-        <span className="badge subtle">Live demo snapshot</span>
+        <h2>
+          <button type="button" className="details-toggle" onClick={onToggle} aria-expanded={!collapsed}>
+            Ranch Intelligence
+            <span className="toggle-icon" aria-hidden="true" />
+          </button>
+        </h2>
+        {!collapsed && <span className="badge subtle">Live demo snapshot</span>}
       </div>
-      <div className="insights-grid">
-        <article className="insight-panel">
-          <header>
-            <span className="metric-label">Average Weight</span>
+      {!collapsed && (
+        <div className="insights-grid">
+          <article className="insight-panel">
+            <header>
+              <span className="metric-label">Average Weight</span>
             <span className="metric-value">{averageWeight ? `${averageWeight} lbs` : 'Loading…'}</span>
           </header>
           <Sparkline values={weightTrend} gradientId="weightTrend" />
@@ -151,7 +157,8 @@ function InsightsPanel({ herd, herdStats, sensors, gates, chuteLog, cameras }) {
             <p className="insight-footnote">Tap a feed to open live view</p>
           </div>
         </article>
-      </div>
+        </div>
+      )}
     </section>
   )
 }
